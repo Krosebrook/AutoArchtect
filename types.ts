@@ -1,4 +1,3 @@
-
 export enum AppView {
   GENERATOR = 'GENERATOR',
   CHATBOT = 'CHATBOT',
@@ -14,7 +13,7 @@ export enum AppView {
   PROFILE = 'PROFILE'
 }
 
-export type Platform = 'zapier' | 'n8n' | 'langchain' | 'make' | 'pipedream' | 'google-sheets' | 'airtable' | 'shopify';
+export type Platform = 'zapier' | 'n8n' | 'langchain' | 'make' | 'pipedream' | 'google-sheets' | 'airtable' | 'shopify' | 'openai' | 'anthropic';
 
 export type StepType = 'trigger' | 'action' | 'logic';
 
@@ -37,6 +36,28 @@ export interface AutomationResult {
   explanation: string;
   sources?: GroundingSource[];
   timestamp?: number;
+  documentation?: WorkflowDocumentation;
+}
+
+export interface WorkflowDocumentation {
+  purpose: string;
+  inputSchema: any;
+  outputSchema: any;
+  logicFlow: string[];
+  maintenanceGuide: string;
+}
+
+export interface PipelineStep {
+  id: string;
+  name: string;
+  type: 'lint' | 'test' | 'build' | 'deploy' | 'security-scan';
+  status: 'pending' | 'active' | 'success' | 'failed';
+}
+
+export interface PipelineStage {
+  id: string;
+  name: string;
+  steps: PipelineStep[];
 }
 
 export interface ComparisonResult {
@@ -61,7 +82,6 @@ export interface UserProfile {
   name: string;
   role: string;
   avatarSeed: string;
-  apiKeyOverride?: string;
   preferences: {
     theme: 'light' | 'dark' | 'system';
     defaultPlatform: Platform;
@@ -86,6 +106,7 @@ export interface DeploymentConfig {
   secrets: SecretRequirement[];
   exportFormats: string[];
   readinessCheck: string;
+  suggestedPipeline?: PipelineStage[];
 }
 
 export interface AuditResult {

@@ -1,38 +1,34 @@
 
-import { Dexie, type Table } from 'dexie';
+import Dexie, { type Table } from 'dexie';
 import { SavedBlueprint, UserProfile } from '../types';
 
+/**
+ * Standard Dexie database initialization.
+ * Using default import for Dexie ensures that class methods like 'version' 
+ * are correctly inherited and recognized by the TypeScript compiler.
+ */
 export class ArchitectDatabase extends Dexie {
   blueprints!: Table<SavedBlueprint>;
   profile!: Table<UserProfile & { id: string }>;
-  secureKeys!: Table<{ provider: string, key: string }>;
 
   constructor() {
+    // Initialize the database with its name
     super('AutoArchitectDB');
-    // Configure database versioning and stores on the instance
+    
+    // Configure database versioning and stores on the instance.
+    // The version() method is inherited from the Dexie base class.
+    // Fixed: Correctly using inherited version method from Dexie class.
     this.version(1).stores({
       blueprints: 'id, name, platform, timestamp',
-      profile: 'id',
-      secureKeys: 'provider'
+      profile: 'id'
     });
   }
 }
 
 export const db = new ArchitectDatabase();
 
-// Security Wrapper: Simulating local encryption for keys
+// Removed local key storage to comply with exclusively using process.env.API_KEY
 export const storage = {
-  async saveKey(provider: string, key: string) {
-    const obfuscated = btoa(key).split('').reverse().join(''); // Simple client-side obfuscation
-    return await db.secureKeys.put({ provider, key: obfuscated });
-  },
-
-  async getKey(provider: string): Promise<string | null> {
-    const entry = await db.secureKeys.get(provider);
-    if (!entry) return null;
-    return atob(entry.key.split('').reverse().join(''));
-  },
-
   async getProfile(): Promise<UserProfile | null> {
     const p = await db.profile.get('current');
     return p || null;

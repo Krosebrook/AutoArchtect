@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { TerminalEntry } from '../types';
 import { GoogleGenAI } from '@google/genai';
-import { storage } from '../services/storageService';
 import { 
   Terminal as TerminalIcon, 
   Send, 
@@ -36,19 +35,10 @@ const TerminalView: React.FC = () => {
     
     switch (action.toLowerCase()) {
       case 'help':
-        addEntry('info', 'Available Commands:\n  help - Show this menu\n  clear - Wipe terminal history\n  set-key <provider> <key> - Save key to local vault\n  test-key <provider> - Verify connectivity\n  exec <prompt> - Direct model execution');
+        addEntry('info', 'Available Commands:\n  help - Show this menu\n  clear - Wipe terminal history\n  exec <prompt> - Direct model execution using system environment');
         break;
       case 'clear':
         setEntries([]);
-        break;
-      case 'set-key':
-        if (args.length < 2) return addEntry('error', 'Usage: set-key <provider> <key>');
-        await storage.saveKey(args[0], args[1]);
-        addEntry('info', `Key for ${args[0]} securely persisted to IndexedDB.`);
-        break;
-      case 'test-key':
-        const key = await storage.getKey(args[0] || 'gemini');
-        addEntry('info', key ? `Key found for ${args[0]}. Validating...` : `No key found for ${args[0]}.`);
         break;
       case 'exec':
         await executeAI(args.join(' '));
@@ -61,11 +51,10 @@ const TerminalView: React.FC = () => {
   const executeAI = async (prompt: string) => {
     setIsExecuting(true);
     try {
-      const storedKey = await storage.getKey('gemini');
-      const apiKey = storedKey || process.env.API_KEY;
-      
-      if (!apiKey) throw new Error("Authentication failed: No valid API key in Vault or Env.");
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) throw new Error("Authentication failed: API_KEY is missing from environment.");
 
+      // Direct usage of GoogleGenAI per guidelines
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -102,7 +91,7 @@ const TerminalView: React.FC = () => {
           </div>
           <div className="flex items-center gap-3 text-white/20">
             <Lock size={14} />
-            <span className="text-[9px] font-bold uppercase">Encrypted IndexedDB Session</span>
+            <span className="text-[9px] font-bold uppercase">Secured Environment Execution</span>
           </div>
         </div>
 
@@ -144,7 +133,7 @@ const TerminalView: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder="arch@vault:~$ set-key gemini YOUR_KEY"
+              placeholder="arch@vault:~$ help"
               className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-8 py-5 text-indigo-300 font-mono text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none transition-all"
             />
             <button 

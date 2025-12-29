@@ -4,7 +4,6 @@ import { Card } from '../components/ui/Card';
 import { UserProfile, Platform } from '../types';
 import { 
   UserCircle, 
-  Key, 
   Settings, 
   ShieldCheck, 
   Save, 
@@ -19,7 +18,6 @@ const ProfileView: React.FC = () => {
     name: 'Lead Architect',
     role: 'Senior Automation Engineer',
     avatarSeed: 'arch_1',
-    apiKeyOverride: '',
     preferences: {
       theme: 'system',
       defaultPlatform: 'zapier',
@@ -31,22 +29,14 @@ const ProfileView: React.FC = () => {
 
   useEffect(() => {
     const saved = localStorage.getItem('aa_user_profile');
-    const key = localStorage.getItem('aa_api_key_override');
     if (saved) {
       const parsed = JSON.parse(saved);
-      setProfile({ ...parsed, apiKeyOverride: key || '' });
+      setProfile(parsed);
     }
   }, []);
 
   const handleSave = () => {
-    const { apiKeyOverride, ...rest } = profile;
-    localStorage.setItem('aa_user_profile', JSON.stringify(rest));
-    if (apiKeyOverride) {
-      localStorage.setItem('aa_api_key_override', apiKeyOverride);
-    } else {
-      localStorage.removeItem('aa_api_key_override');
-    }
-    
+    localStorage.setItem('aa_user_profile', JSON.stringify(profile));
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
   };
@@ -73,26 +63,16 @@ const ProfileView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card title="Credentials" subtitle="Secure API Key Overrides">
+        <Card title="System Identity" subtitle="Environmental Configuration">
           <div className="space-y-6">
             <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <Key size={14} className="text-indigo-400" /> Google Gemini API Key
-                </label>
-                <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-500 uppercase tracking-widest">
-                  <ShieldCheck size={12} /> Local Only
-                </div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <ShieldCheck size={14} className="text-emerald-500" /> API Authenticator
+                </span>
               </div>
-              <input 
-                type="password" 
-                value={profile.apiKeyOverride}
-                onChange={(e) => setProfile({...profile, apiKeyOverride: e.target.value})}
-                placeholder="Optional Key Override (env default used if empty)"
-                className="w-full bg-white border border-slate-100 rounded-2xl px-6 py-4 text-sm font-mono focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
-              />
-              <p className="text-[10px] text-slate-400 font-bold leading-relaxed italic">
-                Overriding the environment key allows you to use personal billing projects for terminal executions.
+              <p className="text-[11px] text-slate-600 font-bold leading-relaxed">
+                System authenticated via pre-configured environment variables. API_KEY protocol is locked for security.
               </p>
             </div>
           </div>

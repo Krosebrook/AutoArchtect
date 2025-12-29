@@ -1,28 +1,24 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { Platform, AutomationResult, SimulationResponse, AuditResult, DeploymentConfig, ComparisonResult } from "../types";
+import { Platform, AutomationResult, SimulationResponse, AuditResult, DeploymentConfig, ComparisonResult, WorkflowDocumentation, PipelineStage } from "../types";
 import { storage } from "./storageService";
 
 /**
- * Creates and initializes the Google GenAI client using the API key from storage or environment.
+ * Creates and initializes the Google GenAI client exclusively using the pre-configured API key.
  */
-const createAiClient = async () => {
-  const storedKey = await storage.getKey('gemini');
-  const apiKey = storedKey || process.env.API_KEY;
+const createAiClient = () => {
+  const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("Critical Configuration Missing: API Key required from Terminal (set-key gemini <key>) or environment.");
+    throw new Error("Critical Configuration Missing: API_KEY environment variable is not set.");
   }
   return new GoogleGenAI({ apiKey });
 };
 
-/**
- * Utility wrapper to handle common AI task logic including retries and client creation.
- */
 async function executeAiTask<T>(
   task: (ai: GoogleGenAI) => Promise<T>,
   retryCount = 2
 ): Promise<T> {
-  const ai = await createAiClient();
+  const ai = createAiClient();
   try {
     return await task(ai);
   } catch (error: any) {
@@ -37,9 +33,6 @@ async function executeAiTask<T>(
   }
 }
 
-/**
- * Generates an automation blueprint for a specific platform and description.
- */
 export const generateAutomation = async (platform: Platform, description: string): Promise<AutomationResult> => {
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
@@ -78,8 +71,33 @@ export const generateAutomation = async (platform: Platform, description: string
 };
 
 /**
- * Compares and benchmarks multiple automation platforms for a given task.
+ * Generates technical documentation for a workflow blueprint.
  */
+export const generateWorkflowDocs = async (blueprint: AutomationResult): Promise<WorkflowDocumentation> => {
+  return executeAiTask(async (ai) => {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Generate comprehensive technical documentation for this automation: ${JSON.stringify(blueprint)}`,
+      config: {
+        systemInstruction: "You are a Technical Documentation AI. Provide structured JSON documentation.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            purpose: { type: Type.STRING },
+            inputSchema: { type: Type.OBJECT, description: "JSON Schema for inputs" },
+            outputSchema: { type: Type.OBJECT, description: "JSON Schema for outputs" },
+            logicFlow: { type: Type.ARRAY, items: { type: Type.STRING } },
+            maintenanceGuide: { type: Type.STRING }
+          },
+          required: ["purpose", "inputSchema", "outputSchema", "logicFlow", "maintenanceGuide"]
+        }
+      }
+    });
+    return JSON.parse(response.text || "{}") as WorkflowDocumentation;
+  });
+};
+
 export const benchmarkPlatforms = async (description: string, targetPlatforms: Platform[]): Promise<ComparisonResult> => {
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
@@ -116,9 +134,11 @@ export const benchmarkPlatforms = async (description: string, targetPlatforms: P
   });
 };
 
-/**
- * Simple advisor chat without history state persistence in service.
- */
+// Added missing resetChat export for ChatbotView compatibility
+export const resetChat = () => {
+  // Stateless implementation; clearing local message history in the UI is sufficient.
+};
+
 export const chatWithAssistant = async (message: string): Promise<string> => {
   return executeAiTask(async (ai) => {
     const result = await ai.models.generateContent({
@@ -130,16 +150,6 @@ export const chatWithAssistant = async (message: string): Promise<string> => {
   });
 };
 
-/**
- * Resets the chat session (stateless at service level, handled by UI).
- */
-export const resetChat = () => {
-  // UI maintains the message history; service is currently stateless.
-};
-
-/**
- * Encodes bytes to base64 string.
- */
 export const encode = (bytes: Uint8Array) => {
   let binary = '';
   const len = bytes.byteLength;
@@ -149,9 +159,6 @@ export const encode = (bytes: Uint8Array) => {
   return btoa(binary);
 };
 
-/**
- * Decodes base64 string to Uint8Array.
- */
 export const decode = (base64: string) => {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -162,9 +169,6 @@ export const decode = (base64: string) => {
   return bytes;
 };
 
-/**
- * Decodes raw PCM audio data into an AudioBuffer.
- */
 export const decodeAudioData = async (
   data: Uint8Array,
   ctx: AudioContext,
@@ -184,9 +188,6 @@ export const decodeAudioData = async (
   return buffer;
 };
 
-/**
- * Analyzes an image and extracts text description.
- */
 export const analyzeImage = async (base64Data: string, prompt: string, mimeType: string = 'image/jpeg'): Promise<string> => {
   return executeAiTask(async (ai) => {
     const result = await ai.models.generateContent({
@@ -197,45 +198,41 @@ export const analyzeImage = async (base64Data: string, prompt: string, mimeType:
   });
 };
 
-/**
- * Generates speech audio from text using the TTS model.
- */
+// Fixed generateSpeech to use executeAiTask for consistent client lifecycle
 export const generateSpeech = async (text: string, voice: string): Promise<string> => {
-  const ai = await createAiClient();
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-preview-tts",
-    contents: [{ parts: [{ text: `Synthesize: ${text}` }] }],
-    config: {
-      responseModalities: [Modality.AUDIO],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: voice as any },
+  return executeAiTask(async (ai) => {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text: `Synthesize: ${text}` }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: voice as any },
+          },
         },
       },
-    },
+    });
+    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || "";
   });
-  return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || "";
 };
 
-/**
- * Generates a technical operator manual for a description.
- */
+// Added missing generateProcedureManual export for TTSView compatibility
 export const generateProcedureManual = async (text: string): Promise<string> => {
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Write a technical operator manual for this automation: ${text}`,
-      config: { systemInstruction: "Technical Writer mode." }
+      contents: `Generate a comprehensive step-by-step procedure manual for this automation: ${text}`,
+      config: {
+        systemInstruction: "You are a Technical Documentation AI. Provide a clear, human-readable operator manual in markdown.",
+      }
     });
-    return response.text || "Manual generation failed.";
+    return response.text || "Manual synthesis failed.";
   });
 };
 
-/**
- * Connects to the Gemini Live API for real-time audio design.
- */
-export const connectToLiveArchitect = async (callbacks: any) => {
-  const ai = await createAiClient();
+export const connectToLiveArchitect = (callbacks: any) => {
+  const ai = createAiClient();
   return ai.live.connect({
     model: 'gemini-2.5-flash-native-audio-preview-09-2025',
     callbacks,
@@ -249,9 +246,6 @@ export const connectToLiveArchitect = async (callbacks: any) => {
   });
 };
 
-/**
- * Simulates automation logic within a dry-run kernel.
- */
 export const simulateAutomation = async (blueprint: AutomationResult, inputData: string): Promise<SimulationResponse> => {
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
@@ -287,9 +281,6 @@ export const simulateAutomation = async (blueprint: AutomationResult, inputData:
   });
 };
 
-/**
- * Audits a blueprint for security and cost efficiency.
- */
 export const auditAutomation = async (blueprint: AutomationResult): Promise<AuditResult> => {
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
@@ -326,16 +317,13 @@ export const auditAutomation = async (blueprint: AutomationResult): Promise<Audi
   });
 };
 
-/**
- * Scans a blueprint to identify required secrets for deployment.
- */
 export const identifySecrets = async (blueprint: AutomationResult): Promise<DeploymentConfig> => {
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Identify all environmental secrets and export formats for: ${JSON.stringify(blueprint)}`,
+      contents: `Identify secrets and suggest a CI/CD pipeline for: ${JSON.stringify(blueprint)}`,
       config: {
-        systemInstruction: "Scan for OAuth, API keys, and sensitive vars. Output JSON.",
+        systemInstruction: "Analyze for secrets and CI/CD stages. Output JSON.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -353,9 +341,33 @@ export const identifySecrets = async (blueprint: AutomationResult): Promise<Depl
               }
             },
             exportFormats: { type: Type.ARRAY, items: { type: Type.STRING } },
-            readinessCheck: { type: Type.STRING }
+            readinessCheck: { type: Type.STRING },
+            suggestedPipeline: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  name: { type: Type.STRING },
+                  steps: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        id: { type: Type.STRING },
+                        name: { type: Type.STRING },
+                        type: { type: Type.STRING, enum: ['lint', 'test', 'build', 'deploy', 'security-scan'] },
+                        status: { type: Type.STRING }
+                      },
+                      required: ["id", "name", "type", "status"]
+                    }
+                  }
+                },
+                required: ["id", "name", "steps"]
+              }
+            }
           },
-          required: ["secrets", "exportFormats", "readinessCheck"]
+          required: ["secrets", "exportFormats", "readinessCheck", "suggestedPipeline"]
         }
       }
     });
