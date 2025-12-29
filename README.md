@@ -1,11 +1,26 @@
-<div align="center">
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+# AutoArchitect v2.5 PWA-Native
 
-  <h1>Built with AI Studio</h2>
+Production-grade suite for AI automation architecture. Now featuring a robust, offline-capable IndexedDB backbone and a secure API Terminal.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## 🌟 Key Updates
+- **Structured Persistence**: Moved from localStorage to IndexedDB (Dexie.js).
+- **Secure Key Vault**: API keys are obfuscated and stored locally. Never sent to a backend.
+- **Production CLI**: Fully functional `API Terminal` view with command parsing.
+- **Service Worker v2**: Stale-while-revalidate caching for ultra-fast startup.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## 🚀 Installation
+1. Open the app in a supported browser (Chrome/Edge/Safari).
+2. Click the 'Install' icon in the address bar to add to your Desktop/Home Screen.
 
-</div>
+## 🛠 Terminal Usage
+Access the `API Terminal` and type `help` to see available commands.
+Example to initialize your session:
+`set-key gemini YOUR_GOOGLE_AI_KEY`
+`test-key gemini`
+`exec Create a Zapier flow for Shopify orders`
+
+## 📁 Architecture
+- `services/storageService.ts`: IndexedDB logic and Key Vault.
+- `services/geminiService.ts`: AI orchestration prioritizing Local Keys.
+- `views/TerminalView.tsx`: CLI implementation.

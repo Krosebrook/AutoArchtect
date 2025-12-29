@@ -1,0 +1,8 @@
+{
+  "name": "AutoArchitect v2.6",
+  "description": "Enterprise AI Workflow Suite: Synthesis, Audit, Comparison, Persistence, and Deployment.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
