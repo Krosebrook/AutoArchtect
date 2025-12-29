@@ -6,10 +6,15 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   lighthouse:
     name: Lighthouse PWA Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -57,6 +62,8 @@ jobs:
   pwa-validation:
     name: PWA Requirements Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -121,6 +128,8 @@ jobs:
   web-vitals:
     name: Web Vitals Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
