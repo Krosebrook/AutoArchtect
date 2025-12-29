@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { generateAutomation, chatWithAssistant, generateWorkflowDocs } from '../services/geminiService';
 import { AutomationResult, Platform, AsyncState, AutomationStep, AppView, SavedBlueprint, ChatMessage, WorkflowDocumentation } from '../types';
@@ -47,16 +46,106 @@ interface PlatformConfig {
 }
 
 const PLATFORMS: PlatformConfig[] = [
-  { id: 'openai', label: 'OpenAI', tagline: 'Generative AI infrastructure', logo: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://logo.clearbit.com/openai.com', color: 'bg-[#10a37f]', tier: 'Native AI', tooltip: 'Deploy custom GPTs and fine-tuned models into workflows.' },
-  { id: 'anthropic', label: 'Anthropic', tagline: 'Reliable AI logic', logo: 'https://images.unsplash.com/photo-1620712943543-bcc4628c71d5?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://logo.clearbit.com/anthropic.com', color: 'bg-[#cc9b7a]', tier: 'Secure AI', tooltip: 'Advanced Claude-powered reasoning for high-trust workflows.' },
-  { id: 'langchain', label: 'LangChain', tagline: 'AI Agent infrastructure', logo: 'https://images.unsplash.com/photo-1677442135121-6b199920b784?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://avatars.githubusercontent.com/u/126733545?s=200&v=4', color: 'bg-[#00A67E]', tier: 'AI Native', tooltip: 'Framework for developing applications powered by language models.' },
-  { id: 'zapier', label: 'Zapier', tagline: 'Standard connector ecosystem', logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://logo.clearbit.com/zapier.com', color: 'bg-[#FF4A00]', tier: 'Essential', tooltip: 'Global standard for simple SaaS integrations.' },
-  { id: 'n8n', label: 'n8n.io', tagline: 'Complex node-based logic', logo: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://logo.clearbit.com/n8n.io', color: 'bg-[#FF6D5A]', tier: 'Advanced', tooltip: 'Fair-code workflow automation with deep technical control.' },
-  { id: 'make', label: 'Make', tagline: 'Visual workflow builder', logo: 'https://images.unsplash.com/photo-1551288049-bbbda5366392?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://logo.clearbit.com/make.com', color: 'bg-[#8A2BE2]', tier: 'Pro-Visual', tooltip: 'Powerful visual platform to design, build, and automate.' },
-  { id: 'shopify', label: 'Shopify', tagline: 'Merchant-first operations', logo: 'https://images.unsplash.com/photo-1556742044-3c52d6e88c62?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://logo.clearbit.com/shopify.com', color: 'bg-[#95BF47]', tier: 'Enterprise', tooltip: 'Robust commerce platform for managing product lifecycles.' },
-  { id: 'google-sheets', label: 'Google Sheets', tagline: 'Legacy data orchestration', logo: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://www.gstatic.com/images/branding/product/1x/sheets_2020q4_48dp.png', color: 'bg-[#0F9D58]', tier: 'Hybrid', tooltip: 'Cloud-based spreadsheet tool as a universal data bridge.' },
-  { id: 'airtable', label: 'Airtable', tagline: 'Modern data modeling', logo: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://logo.clearbit.com/airtable.com', color: 'bg-[#18BFFF]', tier: 'Relational', tooltip: 'Hybrid spreadsheet-database for sophisticated data modeling.' },
-  { id: 'pipedream', label: 'Pipedream', tagline: 'Engineer-centric control', logo: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc48?auto=format&fit=crop&q=80&w=400&h=250', brandIcon: 'https://logo.clearbit.com/pipedream.com', color: 'bg-[#191970]', tier: 'Developer', tooltip: 'Integration platform for developers to connect APIs fast.' },
+  { 
+    id: 'openai', 
+    label: 'OpenAI', 
+    tagline: 'Generative Intelligence Hub', 
+    logo: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://logo.clearbit.com/openai.com', 
+    color: 'bg-[#10a37f]', 
+    tier: 'Tier-1 AI', 
+    tooltip: 'Direct integration with GPT-4o, DALL-E 3, and the Assistants API for cognitive workflow branches.' 
+  },
+  { 
+    id: 'anthropic', 
+    label: 'Anthropic', 
+    tagline: 'Constitutional Reasoning', 
+    logo: 'https://images.unsplash.com/photo-1620712943543-bcc4628c71d5?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://logo.clearbit.com/anthropic.com', 
+    color: 'bg-[#cc9b7a]', 
+    tier: 'Enterprise AI', 
+    tooltip: 'High-trust Claude-3 logic for complex document processing and reliable multi-step reasoning.' 
+  },
+  { 
+    id: 'langchain', 
+    label: 'LangChain', 
+    tagline: 'Agentic Orchestration', 
+    logo: 'https://images.unsplash.com/photo-1677442135121-6b199920b784?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://avatars.githubusercontent.com/u/126733545?s=200&v=4', 
+    color: 'bg-[#00A67E]', 
+    tier: 'AI-Native', 
+    tooltip: 'Framework-level automation for chaining LLMs, vector stores, and external memory systems.' 
+  },
+  { 
+    id: 'zapier', 
+    label: 'Zapier', 
+    tagline: 'Universal Connector', 
+    logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://logo.clearbit.com/zapier.com', 
+    color: 'bg-[#FF4A00]', 
+    tier: 'Essential', 
+    tooltip: 'The global standard for integrating over 6,000 SaaS applications with zero code.' 
+  },
+  { 
+    id: 'make', 
+    label: 'Make', 
+    tagline: 'Visual Flow Canvas', 
+    logo: 'https://images.unsplash.com/photo-1551288049-bbbda5366392?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://logo.clearbit.com/make.com', 
+    color: 'bg-[#8A2BE2]', 
+    tier: 'Pro-Visual', 
+    tooltip: 'Advanced visual builder for complex data transformations and iterative workflow loops.' 
+  },
+  { 
+    id: 'n8n', 
+    label: 'n8n.io', 
+    tagline: 'Self-Hosted Control', 
+    logo: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://logo.clearbit.com/n8n.io', 
+    color: 'bg-[#FF6D5A]', 
+    tier: 'Fair-Code', 
+    tooltip: 'Nodes-based automation giving you full data ownership and flexible self-hosting options.' 
+  },
+  { 
+    id: 'shopify', 
+    label: 'Shopify', 
+    tagline: 'Commerce Automation', 
+    logo: 'https://images.unsplash.com/photo-1556742044-3c52d6e88c62?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://logo.clearbit.com/shopify.com', 
+    color: 'bg-[#95BF47]', 
+    tier: 'Retail', 
+    tooltip: 'Automate order processing, customer segmentation, and inventory logistics natively.' 
+  },
+  { 
+    id: 'google-sheets', 
+    label: 'Sheets', 
+    tagline: 'Data Orchestration', 
+    logo: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://www.gstatic.com/images/branding/product/1x/sheets_2020q4_48dp.png', 
+    color: 'bg-[#0F9D58]', 
+    tier: 'Hybrid', 
+    tooltip: 'Cloud-based spreadsheet tool as a universal data bridge.' 
+  },
+  { 
+    id: 'airtable', 
+    label: 'Airtable', 
+    tagline: 'Modern Data Modeling', 
+    logo: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://logo.clearbit.com/airtable.com', 
+    color: 'bg-[#18BFFF]', 
+    tier: 'Relational', 
+    tooltip: 'Hybrid spreadsheet-database for sophisticated data modeling.' 
+  },
+  { 
+    id: 'pipedream', 
+    label: 'Pipedream', 
+    tagline: 'Developer Workflows', 
+    logo: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc48?auto=format&fit=crop&q=80&w=400&h=250', 
+    brandIcon: 'https://logo.clearbit.com/pipedream.com', 
+    color: 'bg-[#191970]', 
+    tier: 'Dev-Centric', 
+    tooltip: 'The fastest way to connect APIs via code and pre-built components for engineering teams.' 
+  },
 ];
 
 const StepItem: React.FC<{ step: AutomationStep; index: number }> = ({ step, index }) => (
@@ -75,7 +164,7 @@ const StepItem: React.FC<{ step: AutomationStep; index: number }> = ({ step, ind
 interface Props { onBlueprintGenerated?: (b: AutomationResult) => void; onNavigate?: (v: AppView, b?: AutomationResult) => void; }
 
 const AutomationGeneratorView: React.FC<Props> = ({ onBlueprintGenerated, onNavigate }) => {
-  const [platform, setPlatform] = useState<Platform>('openai');
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>('openai');
   const [description, setDescription] = useState('');
   const [touched, setTouched] = useState(false);
   const [state, setState] = useState<AsyncState<AutomationResult>>({ data: null, loading: false, error: null });
@@ -96,7 +185,7 @@ const AutomationGeneratorView: React.FC<Props> = ({ onBlueprintGenerated, onNavi
     setActiveTab('blueprint');
     
     try {
-      const data = await generateAutomation(platform, description);
+      const data = await generateAutomation(selectedPlatform, description);
       setState({ data, loading: false, error: null });
       if (onBlueprintGenerated) onBlueprintGenerated(data);
       
@@ -138,24 +227,45 @@ const AutomationGeneratorView: React.FC<Props> = ({ onBlueprintGenerated, onNavi
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">1. Ecosystem</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar p-1">
                 {PLATFORMS.map((p) => (
-                   <button 
-                     key={p.id} 
-                     onClick={() => setPlatform(p.id)} 
-                     className={`relative group w-full flex flex-col items-start p-0 rounded-3xl border transition-all duration-300 overflow-hidden ${platform === p.id ? 'bg-white border-indigo-600 ring-2 ring-indigo-50 shadow-lg scale-[1.02]' : 'bg-white border-slate-100 hover:border-indigo-200'}`}
-                     title={p.tooltip}
-                   >
-                     <div className="w-full h-24 relative overflow-hidden">
-                       <img src={p.logo} alt={p.label} className="w-full h-full object-cover opacity-80" />
-                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
-                       <div className="absolute bottom-2 left-3 flex items-center gap-2">
-                         <img src={p.brandIcon} alt="" className="w-5 h-5 object-contain bg-white rounded-md p-0.5" />
-                         <span className="text-[10px] font-black uppercase text-white tracking-widest">{p.label}</span>
+                   <div key={p.id} className="relative group">
+                     <button 
+                       onClick={() => setSelectedPlatform(p.id)} 
+                       className={`relative w-full flex flex-col items-start p-0 rounded-3xl border transition-all duration-300 overflow-hidden ${selectedPlatform === p.id ? 'bg-white border-indigo-600 ring-2 ring-indigo-50 shadow-lg scale-[1.02]' : 'bg-white border-slate-100 hover:border-indigo-200'}`}
+                     >
+                       <div className="w-full h-24 relative overflow-hidden">
+                         <img src={p.logo} alt={p.label} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700" />
+                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent" />
+                         <div className="absolute bottom-3 left-4 flex items-center gap-2">
+                           <img src={p.brandIcon} alt="" className="w-5 h-5 object-contain bg-white rounded-md p-0.5" />
+                           <div className="flex flex-col items-start">
+                             <span className="text-[10px] font-black uppercase text-white tracking-widest leading-none">{p.label}</span>
+                             <span className="text-[7px] font-bold text-white/60 uppercase tracking-widest mt-0.5">{p.tagline}</span>
+                           </div>
+                         </div>
+                         <div className="absolute top-2 right-3">
+                           <span className="text-[7px] font-black uppercase text-white/90 bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/20 tracking-widest">{p.tier}</span>
+                         </div>
                        </div>
-                       <div className="absolute top-2 right-3">
-                         <span className="text-[8px] font-black uppercase text-white/70 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm tracking-widest">{p.tier}</span>
-                       </div>
+                     </button>
+                     
+                     {/* Custom Refined Tooltip */}
+                     <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-[240px] opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none z-[100]">
+                        <div className="bg-[#0f111a] text-white p-4 rounded-2xl shadow-2xl border border-white/10 relative overflow-hidden">
+                           <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent pointer-events-none" />
+                           <div className="relative z-10 space-y-2">
+                             <div className="flex items-center gap-2 pb-2 border-b border-white/10">
+                               <img src={p.brandIcon} alt="" className="w-4 h-4 object-contain bg-white rounded p-0.5" />
+                               <span className="text-[10px] font-black uppercase tracking-widest">{p.label} Node</span>
+                             </div>
+                             <p className="text-[10px] text-gray-400 font-semibold leading-relaxed">
+                               {p.tooltip}
+                             </p>
+                           </div>
+                        </div>
+                        {/* Tooltip Arrow */}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-[6px] border-transparent border-t-[#0f111a]" />
                      </div>
-                   </button>
+                   </div>
                 ))}
               </div>
             </div>
@@ -166,7 +276,7 @@ const AutomationGeneratorView: React.FC<Props> = ({ onBlueprintGenerated, onNavi
                   <div className={`h-full transition-all duration-1000 ${validation.isValid ? 'bg-indigo-600' : 'bg-orange-400'}`} style={{ width: `${validation.progress}%` }} />
                 </div>
               </div>
-              <textarea value={description} onBlur={() => setTouched(true)} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Lead sync from Shopify to Slack..." className={`w-full bg-slate-50 border rounded-3xl px-8 py-6 min-h-[160px] text-sm focus:ring-4 outline-none transition-all ${touched && !validation.isValid ? 'border-orange-200' : 'border-slate-100 focus:border-indigo-500'}`} />
+              <textarea value={description} onBlur={() => setTouched(true)} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Synchronize high-priority Shopify leads to Anthropic for sentiment analysis, then update Airtable..." className={`w-full bg-slate-50 border rounded-3xl px-8 py-6 min-h-[160px] text-sm focus:ring-4 outline-none transition-all ${touched && !validation.isValid ? 'border-orange-200' : 'border-slate-100 focus:border-indigo-500'}`} />
             </div>
             <button onClick={handleGenerate} disabled={state.loading || !validation.isValid} className={`w-full py-6 rounded-3xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-4 transition-all ${state.loading || !validation.isValid ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 text-white shadow-2xl shadow-indigo-500/40 hover-lift'}`}>
               {state.loading ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} />}

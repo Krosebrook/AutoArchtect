@@ -1,10 +1,11 @@
 
-import Dexie, { type Table } from 'dexie';
+
+import { Dexie, type Table } from 'dexie';
 import { SavedBlueprint, UserProfile } from '../types';
 
 /**
  * Standard Dexie database initialization.
- * Using default import for Dexie ensures that class methods like 'version' 
+ * Using named import for Dexie ensures that class methods like 'version' 
  * are correctly inherited and recognized by the TypeScript compiler.
  */
 export class ArchitectDatabase extends Dexie {
@@ -17,8 +18,8 @@ export class ArchitectDatabase extends Dexie {
     
     // Configure database versioning and stores on the instance.
     // The version() method is inherited from the Dexie base class.
-    // Fixed: Correctly using inherited version method from Dexie class.
-    this.version(1).stores({
+    // Fix: Explicitly cast 'this' to the base Dexie class to resolve the inheritance visibility issue in some TypeScript environments.
+    (this as Dexie).version(1).stores({
       blueprints: 'id, name, platform, timestamp',
       profile: 'id'
     });

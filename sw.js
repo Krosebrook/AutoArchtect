@@ -1,4 +1,3 @@
-
 const CACHE_NAME = 'autoarchitect-v2.6.5-stable';
 const API_HOSTNAME = 'googleapis.com';
 
