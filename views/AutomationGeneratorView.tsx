@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { generateAutomation, chatWithAssistant, generateWorkflowDocs } from '../services/geminiService';
 import { AutomationResult, Platform, AsyncState, AutomationStep, AppView, SavedBlueprint, ChatMessage, WorkflowDocumentation } from '../types';
@@ -229,21 +230,32 @@ const AutomationGeneratorView: React.FC<Props> = ({ onBlueprintGenerated, onNavi
                 {PLATFORMS.map((p) => (
                    <div key={p.id} className="relative group">
                      <button 
+                       type="button"
                        onClick={() => setSelectedPlatform(p.id)} 
-                       className={`relative w-full flex flex-col items-start p-0 rounded-3xl border transition-all duration-300 overflow-hidden ${selectedPlatform === p.id ? 'bg-white border-indigo-600 ring-2 ring-indigo-50 shadow-lg scale-[1.02]' : 'bg-white border-slate-100 hover:border-indigo-200'}`}
+                       className={`relative w-full flex flex-col items-start p-0 rounded-3xl border-2 transition-all duration-300 overflow-hidden outline-none ${selectedPlatform === p.id ? 'bg-white border-indigo-600 shadow-xl shadow-indigo-500/20 scale-[1.02] z-10' : 'bg-white border-slate-100 hover:border-indigo-300 hover:shadow-lg hover:-translate-y-0.5 opacity-80 hover:opacity-100'}`}
                      >
                        <div className="w-full h-24 relative overflow-hidden">
-                         <img src={p.logo} alt={p.label} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700" />
-                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent" />
+                         <img 
+                            src={p.logo} 
+                            alt={p.label} 
+                            className={`w-full h-full object-cover transition-transform duration-700 ${selectedPlatform === p.id ? 'scale-110 grayscale-0' : 'scale-100 grayscale hover:grayscale-0'}`} 
+                          />
+                         <div className={`absolute inset-0 bg-gradient-to-t transition-opacity duration-300 ${selectedPlatform === p.id ? 'from-indigo-900/80 via-indigo-900/20' : 'from-slate-900/80 via-slate-900/40'} to-transparent`} />
                          <div className="absolute bottom-3 left-4 flex items-center gap-2">
-                           <img src={p.brandIcon} alt="" className="w-5 h-5 object-contain bg-white rounded-md p-0.5" />
+                           <img src={p.brandIcon} alt="" className="w-5 h-5 object-contain bg-white rounded-md p-0.5 shadow-sm" />
                            <div className="flex flex-col items-start">
                              <span className="text-[10px] font-black uppercase text-white tracking-widest leading-none">{p.label}</span>
-                             <span className="text-[7px] font-bold text-white/60 uppercase tracking-widest mt-0.5">{p.tagline}</span>
+                             <span className="text-[7px] font-bold text-white/70 uppercase tracking-widest mt-0.5">{p.tagline}</span>
                            </div>
                          </div>
                          <div className="absolute top-2 right-3">
-                           <span className="text-[7px] font-black uppercase text-white/90 bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/20 tracking-widest">{p.tier}</span>
+                           {selectedPlatform === p.id ? (
+                             <span className="flex items-center gap-1 text-[7px] font-black uppercase text-white bg-indigo-600 px-2 py-0.5 rounded-full shadow-lg tracking-widest animate-in zoom-in">
+                               <CheckCircle2 size={8} strokeWidth={4} /> Selected
+                             </span>
+                           ) : (
+                             <span className="text-[7px] font-black uppercase text-white/90 bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/20 tracking-widest">{p.tier}</span>
+                           )}
                          </div>
                        </div>
                      </button>
