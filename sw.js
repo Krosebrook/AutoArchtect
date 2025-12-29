@@ -1,11 +1,12 @@
+
 const CACHE_NAME = 'autoarchitect-v2.6.5-stable';
 const API_HOSTNAME = 'googleapis.com';
 
-// Assets to cache immediately on install
+// Assets to cache immediately on install - using relative paths for safety
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  './',
+  'index.html',
+  'manifest.json',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap'
 ];
@@ -83,7 +84,8 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(() => {
-        return caches.match('/index.html');
+        // Fallback to the relative cached entry
+        return caches.match('index.html') || caches.match('./');
       })
     );
     return;

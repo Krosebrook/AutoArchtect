@@ -58,8 +58,26 @@ const PWAInstaller = () => {
         }
       });
 
+      /**
+       * RESOLUTION: Explicit path construction
+       * We calculate the absolute path on the CURRENT origin to prevent
+       * the browser from resolving against the parent frame's base URI (ai.studio).
+       */
+      let swUrl = 'sw.js';
+      try {
+        const origin = window.location.origin;
+        // Get the directory part of the current path
+        const path = window.location.pathname;
+        const directory = path.substring(0, path.lastIndexOf('/'));
+        // Construct the full URL string to force same-origin registration
+        swUrl = `${origin}${directory}/sw.js`.replace(/\/+/g, '/').replace(':/', '://');
+        console.log('[Architect] Initializing SW at:', swUrl);
+      } catch (e) {
+        swUrl = './sw.js';
+      }
+
       // Handle the first-time registration case
-      navigator.serviceWorker.register('/sw.js').then(registration => {
+      navigator.serviceWorker.register(swUrl).then(registration => {
         const sw = registration.installing || registration.waiting || registration.active;
         if (sw) {
           if (sw.state === 'activated') {
@@ -70,6 +88,9 @@ const PWAInstaller = () => {
             });
           }
         }
+      }).catch(err => {
+        // Log detailed error but don't crash the app
+        console.warn('[Architect] SW Registration Error:', err.message);
       });
     }
 
