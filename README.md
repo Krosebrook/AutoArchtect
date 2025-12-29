@@ -55,8 +55,8 @@ Production-grade suite for AI-powered automation architecture. A Progressive Web
 #### Option 2: Local Development
 ```bash
 # Clone the repository
-git clone https://github.com/Krosebrook/AutoArchtect.git
-cd AutoArchtect
+git clone https://github.com/Krosebrook/AutoArchitect.git
+cd AutoArchitect
 
 # Install dependencies
 npm install
@@ -152,7 +152,7 @@ npm run dev
 
 ### Project Structure
 ```
-AutoArchtect/
+AutoArchitect/
 ├── .github/              # GitHub configuration
 │   ├── ISSUE_TEMPLATE/   # Issue templates
 │   ├── workflows/        # CI/CD workflows

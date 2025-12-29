@@ -29,8 +29,8 @@ Thank you for your interest in contributing to AutoArchitect! This document prov
 ### Setup
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/AutoArchtect.git
-cd AutoArchtect
+git clone https://github.com/YOUR_USERNAME/AutoArchitect.git
+cd AutoArchitect
 
 # Install dependencies
 npm install

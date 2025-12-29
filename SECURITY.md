@@ -9,8 +9,8 @@ The AutoArchitect team takes security seriously. We appreciate your efforts to r
 **Please DO NOT report security vulnerabilities through public GitHub issues.**
 
 Instead, please report security vulnerabilities via:
-- **Email**: [Maintainer Email - Please update this]
-- **GitHub Security Advisory**: Use the "Security" tab on the repository
+- **GitHub Security Advisory**: Use the "Security" tab on the repository (preferred)
+- **Private Issue**: Create a security-related issue marked as confidential
 
 ### What to Include
 

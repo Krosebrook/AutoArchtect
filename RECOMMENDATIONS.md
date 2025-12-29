@@ -65,7 +65,7 @@ This document provides a comprehensive audit of the AutoArchitect codebase, docu
 Based on 2024-2025 best practices, here's the ideal structure:
 
 ```
-AutoArchtect/
+AutoArchitect/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
