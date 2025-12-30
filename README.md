@@ -256,11 +256,21 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## 📚 Documentation
 
+### Core Documentation
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and design decisions
-- [RECOMMENDATIONS.md](RECOMMENDATIONS.md) - Best practices, prompts, and reference repos
-- [SECURITY.md](SECURITY.md) - Security policy and practices
-- [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
-- [CHANGELOG.md](CHANGELOG.md) - Version history
+- [ROADMAP.md](ROADMAP.md) - Product roadmap from MVP to v4.0+
+- [CHANGELOG.md](CHANGELOG.md) - Version history and release notes
+- [SECURITY.md](SECURITY.md) - Security policy and vulnerability reporting
+- [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute to the project
+
+### Advanced Documentation
+- [docs/agents.md](docs/agents.md) - Comprehensive AI agent architecture
+- [docs/gemini.md](docs/gemini.md) - Google Gemini integration guide
+- [docs/claude.md](docs/claude.md) - Claude AI integration (planned v3.0)
+- [docs/REFACTORING.md](docs/REFACTORING.md) - Refactoring recommendations and debugging guide
+
+### Best Practices
+- [RECOMMENDATIONS.md](RECOMMENDATIONS.md) - Industry best practices and reference repositories
 
 ## 🐛 Troubleshooting
 
