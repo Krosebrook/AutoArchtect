@@ -524,6 +524,8 @@ const createAiClient = (): GoogleGenAI => {
   // Validate API key format (basic check)
   if (!apiKey.startsWith('AI') || apiKey.length < 20) {
     Logger.warn('API key format looks invalid', { keyLength: apiKey.length });
+    // Note: This is a basic heuristic check. Some valid keys may not match this pattern.
+    // Adjust validation rules based on actual API key formats from your provider.
   }
 
   return new GoogleGenAI({ apiKey });
@@ -860,7 +862,7 @@ const encryptApiKey = async (apiKey: string, password: string): Promise<string> 
     {
       name: 'PBKDF2',
       salt,  // Use randomly generated salt
-      iterations: 100000,
+      iterations: 100000,  // Note: Adjust for target platform. Use 10,000-50,000 for mobile.
       hash: 'SHA-256'
     },
     keyMaterial,

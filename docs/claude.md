@@ -201,7 +201,8 @@ export const getPreferredProvider = async (): Promise<AIProvider> => {
 
 ```typescript
 // API Key Management
-const CLAUDE_API_ENDPOINT = 'https://api.anthropic.com/v1/messages';
+// Note: In production, use environment variables or configuration service
+const CLAUDE_API_ENDPOINT = process.env.CLAUDE_API_ENDPOINT || 'https://api.anthropic.com/v1/messages';
 const CLAUDE_API_VERSION = '2023-06-01';
 
 const createClaudeClient = (apiKey: string) => {
