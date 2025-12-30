@@ -60,19 +60,16 @@ const PWAInstaller = () => {
 
       /**
        * RESOLUTION: Explicit path construction
-       * We calculate the absolute path on the CURRENT origin to prevent
-       * the browser from resolving against the parent frame's base URI (ai.studio).
+       * We calculate the absolute path based on window.location.href to ensure
+       * the origin matches the document context, bypassing potential sandbox
+       * origin spoofing or misconfiguration (e.g. ai.studio vs googleusercontent).
        */
       let swUrl = 'sw.js';
       try {
-        const origin = window.location.origin;
-        // Get the directory part of the current path
-        const path = window.location.pathname;
-        const directory = path.substring(0, path.lastIndexOf('/'));
-        // Construct the full URL string to force same-origin registration
-        swUrl = `${origin}${directory}/sw.js`.replace(/\/+/g, '/').replace(':/', '://');
+        swUrl = new URL('sw.js', window.location.href).href;
         console.log('[Architect] Initializing SW at:', swUrl);
       } catch (e) {
+        console.warn('[Architect] SW URL construction failed, falling back to relative path.');
         swUrl = './sw.js';
       }
 

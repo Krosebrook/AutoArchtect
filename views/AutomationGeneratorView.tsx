@@ -222,17 +222,21 @@ const AutomationGeneratorView: React.FC<Props> = ({ onBlueprintGenerated, onNavi
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start pb-20 animate-in">
       <div className="xl:col-span-4 space-y-8">
-        <Card title="Blueprint Architect" subtitle="Configure target infrastructure">
+        <Card title="Blueprint Architect" subtitle="Configure target infrastructure" className="overflow-visible">
           <div className="space-y-8">
             <div className="space-y-5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">1. Ecosystem</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar p-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-1">
                 {PLATFORMS.map((p) => (
                    <div key={p.id} className="relative group">
                      <button 
                        type="button"
                        onClick={() => setSelectedPlatform(p.id)} 
-                       className={`relative w-full flex flex-col items-start p-0 rounded-3xl border-2 transition-all duration-300 overflow-hidden outline-none ${selectedPlatform === p.id ? 'bg-white border-indigo-600 shadow-xl shadow-indigo-500/20 scale-[1.02] z-10' : 'bg-white border-slate-100 hover:border-indigo-300 hover:shadow-lg hover:-translate-y-0.5 opacity-80 hover:opacity-100'}`}
+                       className={`relative w-full flex flex-col items-start p-0 rounded-3xl border-2 transition-all duration-300 overflow-hidden outline-none ${
+                         selectedPlatform === p.id 
+                           ? 'bg-white border-indigo-600 shadow-xl shadow-indigo-500/20 scale-[1.02] z-10 ring-2 ring-indigo-600 ring-offset-2' 
+                           : 'bg-white border-slate-100 hover:border-indigo-300 hover:shadow-lg hover:-translate-y-0.5 opacity-80 hover:opacity-100'
+                       }`}
                      >
                        <div className="w-full h-24 relative overflow-hidden">
                          <img 
