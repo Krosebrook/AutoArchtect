@@ -556,8 +556,8 @@ Based on GitHub issues and user feedback:
    - Parallel execution
 
 ### How to Contribute
-- 📝 Submit feature requests via [GitHub Issues](https://github.com/Krosebrook/AutoArchtect/issues)
-- 💬 Join discussions in [GitHub Discussions](https://github.com/Krosebrook/AutoArchtect/discussions)
+- 📝 Submit feature requests via [GitHub Issues](https://github.com/Krosebrook/AutoArchitect/issues)
+- 💬 Join discussions in [GitHub Discussions](https://github.com/Krosebrook/AutoArchitect/discussions)
 - 🗳️ Vote on features using 👍 reactions
 - 🛠️ Contribute code via pull requests
 

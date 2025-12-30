@@ -844,6 +844,9 @@ const encryptApiKey = async (apiKey: string, password: string): Promise<string> 
   const encoder = new TextEncoder();
   const data = encoder.encode(apiKey);
   
+  // Generate random salt for key derivation
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  
   // Derive key from password
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -856,7 +859,7 @@ const encryptApiKey = async (apiKey: string, password: string): Promise<string> 
   const key = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: encoder.encode('salt-value'), // Use proper salt
+      salt,  // Use randomly generated salt
       iterations: 100000,
       hash: 'SHA-256'
     },
@@ -873,7 +876,12 @@ const encryptApiKey = async (apiKey: string, password: string): Promise<string> 
     data
   );
   
-  return btoa(JSON.stringify({ encrypted, iv }));
+  // Store salt, iv, and encrypted data together
+  return btoa(JSON.stringify({ 
+    encrypted: Array.from(new Uint8Array(encrypted)),
+    iv: Array.from(iv),
+    salt: Array.from(salt)
+  }));
 };
 ```
 

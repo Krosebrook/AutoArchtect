@@ -502,7 +502,8 @@ async function executeAiTask<T>(
 # Development (.env)
 GEMINI_API_KEY=your_key_here
 
-# Vite config automatically maps to process.env.API_KEY
+# Note: Vite config (vite.config.ts) maps GEMINI_API_KEY to process.env.API_KEY
+# This is defined in the vite.config.ts defineConfig section
 ```
 
 **Security**:
