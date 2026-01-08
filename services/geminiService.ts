@@ -1,13 +1,23 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { Platform, AutomationResult, SimulationResponse, AuditResult, DeploymentConfig, ComparisonResult, WorkflowDocumentation, PipelineStage } from "../types";
+import { Platform, AutomationResult, SimulationResponse, AuditResult, DeploymentConfig, ComparisonResult, WorkflowDocumentation } from "../types";
 import { storage } from "./storageService";
+import { aiCache, LRUCache } from "../utils/cache";
+import { retryWithBackoff } from "../utils/retry";
+import { logger } from "../utils/logger";
+import { sanitizePrompt } from "../utils/sanitize";
+import { estimateTokenCount, usageTracker } from "../utils/tokens";
+
+/**
+ * Enhanced AI Service with caching, retry logic, and usage tracking
+ * Production-grade implementation for high-load AI-integrated environments
+ */
 
 /**
  * Creates and initializes the Google GenAI client.
  * Priority order: 1) Local stored key, 2) Environment variable
  */
-const createAiClient = async () => {
+const createAiClient = async (): Promise<GoogleGenAI> => {
   // First, try to get key from local secure storage
   let apiKey = await storage.getSecureKey('gemini');
   
@@ -23,18 +33,65 @@ const createAiClient = async () => {
   return new GoogleGenAI({ apiKey });
 };
 
+/**
+ * Execute AI task with enhanced error handling, retry logic, and observability
+ */
 async function executeAiTask<T>(
   task: (ai: GoogleGenAI) => Promise<T>,
-  retryCount = 2
+  options: {
+    cacheKey?: string;
+    cacheable?: boolean;
+    modelType?: string;
+  } = {}
 ): Promise<T> {
-  const ai = await createAiClient();
-  try {
-    return await task(ai);
-  } catch (error: any) {
-    if (retryCount > 0 && (error.status === 429 || error.status >= 500)) {
-      await new Promise(r => setTimeout(r, 1500));
-      return executeAiTask(task, retryCount - 1);
+  const startTime = Date.now();
+  const { cacheKey, cacheable = false, modelType = 'default' } = options;
+
+  // Check cache if enabled
+  if (cacheable && cacheKey) {
+    const cached = aiCache.get(cacheKey);
+    if (cached) {
+      logger.info('Cache hit', { cacheKey, duration: Date.now() - startTime });
+      return cached as T;
     }
+    logger.info('Cache miss', { cacheKey });
+  }
+
+  try {
+    // Execute with retry logic
+    const result = await retryWithBackoff(async () => {
+      const ai = await createAiClient();
+      return await task(ai);
+    }, {
+      maxRetries: 3,
+      initialDelay: 1000,
+      maxDelay: 10000,
+      backoffMultiplier: 2
+    });
+
+    // Track usage (approximate)
+    const duration = Date.now() - startTime;
+    logger.info('AI request completed', { 
+      modelType, 
+      duration, 
+      cached: false 
+    });
+
+    // Cache successful result if enabled
+    if (cacheable && cacheKey) {
+      aiCache.set(cacheKey, result);
+    }
+
+    return result;
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
+    logger.error('AI request failed', error, { 
+      modelType, 
+      duration,
+      errorStatus: error.status,
+      errorMessage: error.message 
+    });
+    
     const message = error.status === 429 
       ? "Architectural load peak reached. Retrying synthesis..." 
       : (error.message || "Synthesis Engine Failure");
@@ -43,10 +100,17 @@ async function executeAiTask<T>(
 }
 
 export const generateAutomation = async (platform: Platform, description: string): Promise<AutomationResult> => {
+  // Sanitize input
+  const sanitizedDesc = sanitizePrompt(description);
+  const cacheKey = LRUCache.generateFingerprint(`automation-${platform}-${sanitizedDesc}`);
+  
+  // Estimate tokens for tracking
+  const estimatedInputTokens = estimateTokenCount(sanitizedDesc);
+  
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `Design a production-grade ${platform} automation for: "${description}".`,
+      contents: `Design a production-grade ${platform} automation for: "${sanitizedDesc}".`,
       config: {
         systemInstruction: "You are the Senior Automation Architect. Output structured JSON.",
         responseMimeType: "application/json",
@@ -75,14 +139,23 @@ export const generateAutomation = async (platform: Platform, description: string
         }
       }
     });
-    return { ...JSON.parse(response.text || "{}"), timestamp: Date.now() };
-  });
+    
+    const result = { ...JSON.parse(response.text || "{}"), timestamp: Date.now() };
+    
+    // Track usage
+    const outputTokens = estimateTokenCount(JSON.stringify(result));
+    usageTracker.track(estimatedInputTokens, outputTokens, 'gemini-pro');
+    
+    return result;
+  }, { cacheKey, cacheable: true, modelType: 'gemini-pro' });
 };
 
 /**
  * Generates technical documentation for a workflow blueprint.
  */
 export const generateWorkflowDocs = async (blueprint: AutomationResult): Promise<WorkflowDocumentation> => {
+  const cacheKey = LRUCache.generateFingerprint(`docs-${blueprint.platform}-${blueprint.timestamp}`);
+  
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -104,14 +177,17 @@ export const generateWorkflowDocs = async (blueprint: AutomationResult): Promise
       }
     });
     return JSON.parse(response.text || "{}") as WorkflowDocumentation;
-  });
+  }, { cacheKey, cacheable: true, modelType: 'gemini-flash' });
 };
 
 export const benchmarkPlatforms = async (description: string, targetPlatforms: Platform[]): Promise<ComparisonResult> => {
+  const sanitizedDesc = sanitizePrompt(description);
+  const cacheKey = LRUCache.generateFingerprint(`benchmark-${sanitizedDesc}-${targetPlatforms.join(',')}`);
+  
   return executeAiTask(async (ai) => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `Compare implementations for: "${description}" across: ${targetPlatforms.join(', ')}.`,
+      contents: `Compare implementations for: "${sanitizedDesc}" across: ${targetPlatforms.join(', ')}.`,
       config: {
         systemInstruction: "Analyze and benchmark multiple automation platforms. Output JSON.",
         responseMimeType: "application/json",
@@ -140,23 +216,26 @@ export const benchmarkPlatforms = async (description: string, targetPlatforms: P
       }
     });
     return JSON.parse(response.text || "{}") as ComparisonResult;
-  });
+  }, { cacheKey, cacheable: true, modelType: 'gemini-pro' });
 };
 
 // Added missing resetChat export for ChatbotView compatibility
-export const resetChat = () => {
+export const resetChat = (): void => {
   // Stateless implementation; clearing local message history in the UI is sufficient.
 };
 
 export const chatWithAssistant = async (message: string): Promise<string> => {
+  const sanitizedMessage = sanitizePrompt(message);
+  const cacheKey = LRUCache.generateFingerprint(`chat-${sanitizedMessage}`);
+  
   return executeAiTask(async (ai) => {
     const result = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: message,
+      contents: sanitizedMessage,
       config: { systemInstruction: "Advisor AI mode." }
     });
     return result.text || "Advisor link timed out.";
-  });
+  }, { cacheKey, cacheable: true, modelType: 'gemini-flash' });
 };
 
 export const encode = (bytes: Uint8Array) => {
@@ -198,13 +277,15 @@ export const decodeAudioData = async (
 };
 
 export const analyzeImage = async (base64Data: string, prompt: string, mimeType: string = 'image/jpeg'): Promise<string> => {
+  const sanitizedPrompt = sanitizePrompt(prompt);
+  
   return executeAiTask(async (ai) => {
     const result = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: { parts: [{ inlineData: { mimeType, data: base64Data } }, { text: prompt }] }
+      contents: { parts: [{ inlineData: { mimeType, data: base64Data } }, { text: sanitizedPrompt }] }
     });
     return result.text || "Inconclusive scan.";
-  });
+  }, { cacheable: false, modelType: 'gemini-pro' }); // Don't cache image analysis
 };
 
 // Fixed generateSpeech to use executeAiTask for consistent client lifecycle
