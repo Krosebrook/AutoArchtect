@@ -51,3 +51,8 @@ exec Create a Zapier flow for Shopify orders
 - **Client-Side Only**: Keys never leave your browser or device.
 - **No Backend Transmission**: All storage and retrieval happens locally via IndexedDB.
 - **Masked Display**: Keys are never displayed in full (only first 4 and last 4 characters shown).
+
+### ⚠️ Security Notice
+The key obfuscation is designed to prevent **casual inspection** and **accidental exposure** (screenshots, logs, DevTools browsing). It is **not cryptographic encryption**. Users with source code access and technical knowledge can reverse the obfuscation. 
+
+**For production/sensitive use cases**: Use environment variables in controlled deployment environments rather than local browser storage. Local storage is provided for PWA offline functionality and personal/development use.

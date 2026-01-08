@@ -45,9 +45,19 @@ export const db = new ArchitectDatabase();
 
 /**
  * Key Obfuscation Utilities
- * Using XOR cipher with a rotating pattern for reversible obfuscation.
- * This is NOT encryption - it prevents casual inspection but determined users
- * can still extract keys. Suitable for preventing accidental exposure.
+ * 
+ * SECURITY MODEL: This is reversible obfuscation, NOT encryption.
+ * The seed is intentionally visible in source code. This approach:
+ * - Prevents casual inspection via browser DevTools
+ * - Prevents accidental exposure in screenshots/logs
+ * - Is NOT secure against determined attackers with source access
+ * 
+ * This matches the documented "obfuscation shim" architecture pattern.
+ * For true security, keys should never be stored client-side. However,
+ * this PWA requires client-side storage for offline functionality.
+ * 
+ * Users are advised: If security is critical, use environment variables
+ * in controlled deployment environments instead of local storage.
  */
 const OBFUSCATION_SEED = 'AutoArchitect-SecureVault-2026';
 
