@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { TerminalEntry } from '../types';
 import { GoogleGenAI } from '@google/genai';
+import { storage } from '../services/storageService';
 import { 
   Terminal as TerminalIcon, 
   Send, 
@@ -13,7 +14,8 @@ import {
   ShieldCheck, 
   Database,
   Loader2,
-  Lock
+  Lock,
+  Key
 } from 'lucide-react';
 
 const TerminalView: React.FC = () => {
@@ -35,10 +37,22 @@ const TerminalView: React.FC = () => {
     
     switch (action.toLowerCase()) {
       case 'help':
-        addEntry('info', 'Available Commands:\n  help - Show this menu\n  clear - Wipe terminal history\n  exec <prompt> - Direct model execution using system environment');
+        addEntry('info', 'Available Commands:\n  help - Show this menu\n  clear - Wipe terminal history\n  set-key <provider> <key> - Store API key (e.g., set-key gemini YOUR_KEY)\n  test-key <provider> - Test stored API key\n  list-keys - Show configured providers\n  delete-key <provider> - Remove stored API key\n  exec <prompt> - Direct model execution');
         break;
       case 'clear':
         setEntries([]);
+        break;
+      case 'set-key':
+        await handleSetKey(args);
+        break;
+      case 'test-key':
+        await handleTestKey(args);
+        break;
+      case 'list-keys':
+        await handleListKeys();
+        break;
+      case 'delete-key':
+        await handleDeleteKey(args);
         break;
       case 'exec':
         await executeAI(args.join(' '));
@@ -51,8 +65,17 @@ const TerminalView: React.FC = () => {
   const executeAI = async (prompt: string) => {
     setIsExecuting(true);
     try {
-      const apiKey = process.env.API_KEY;
-      if (!apiKey) throw new Error("Authentication failed: API_KEY is missing from environment.");
+      // First check for locally stored key
+      let apiKey = await storage.getSecureKey('gemini');
+      
+      // Fallback to environment variable
+      if (!apiKey) {
+        apiKey = process.env.API_KEY || null;
+      }
+
+      if (!apiKey) {
+        throw new Error("No API key configured. Use 'set-key gemini YOUR_KEY' to configure.");
+      }
 
       // Direct usage of GoogleGenAI per guidelines
       const ai = new GoogleGenAI({ apiKey });
@@ -67,6 +90,98 @@ const TerminalView: React.FC = () => {
     } finally {
       setIsExecuting(false);
     }
+  };
+
+  const handleSetKey = async (args: string[]) => {
+    if (args.length < 2) {
+      addEntry('error', 'Usage: set-key <provider> <api_key>\nExample: set-key gemini AIza...');
+      return;
+    }
+
+    const [provider, ...keyParts] = args;
+    const apiKey = keyParts.join(' ').trim();
+
+    try {
+      await storage.saveSecureKey(provider, apiKey);
+      const masked = maskKey(apiKey);
+      addEntry('response', `✓ API key for '${provider}' stored securely.\nKey: ${masked}\nUse 'test-key ${provider}' to verify.`);
+    } catch (err: any) {
+      addEntry('error', `Failed to store key: ${err.message}`);
+    }
+  };
+
+  const handleTestKey = async (args: string[]) => {
+    if (args.length < 1) {
+      addEntry('error', 'Usage: test-key <provider>\nExample: test-key gemini');
+      return;
+    }
+
+    const provider = args[0].toLowerCase();
+    setIsExecuting(true);
+
+    try {
+      const apiKey = await storage.getSecureKey(provider);
+      if (!apiKey) {
+        addEntry('error', `No API key found for provider '${provider}'.\nUse 'set-key ${provider} YOUR_KEY' first.`);
+        return;
+      }
+
+      // Test the key with a simple API call
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: 'Respond with: OK'
+      });
+
+      if (response.text) {
+        addEntry('response', `✓ API key for '${provider}' is valid and working.\nTest response: ${response.text}`);
+      } else {
+        addEntry('error', `API key for '${provider}' returned empty response.`);
+      }
+    } catch (err: any) {
+      addEntry('error', `API key test failed for '${provider}': ${err.message}\nVerify your key and try again.`);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const handleListKeys = async () => {
+    try {
+      const providers = await storage.listSecureKeys();
+      if (providers.length === 0) {
+        addEntry('info', 'No API keys stored.\nUse \'set-key <provider> <key>\' to add one.');
+      } else {
+        const list = providers.map(p => `  • ${p}`).join('\n');
+        addEntry('info', `Configured Providers:\n${list}\n\nUse 'test-key <provider>' to verify.`);
+      }
+    } catch (err: any) {
+      addEntry('error', `Failed to list keys: ${err.message}`);
+    }
+  };
+
+  const handleDeleteKey = async (args: string[]) => {
+    if (args.length < 1) {
+      addEntry('error', 'Usage: delete-key <provider>\nExample: delete-key gemini');
+      return;
+    }
+
+    const provider = args[0].toLowerCase();
+
+    try {
+      const deleted = await storage.deleteSecureKey(provider);
+      if (deleted) {
+        addEntry('response', `✓ API key for '${provider}' removed successfully.`);
+      } else {
+        addEntry('info', `No API key found for provider '${provider}'.`);
+      }
+    } catch (err: any) {
+      addEntry('error', `Failed to delete key: ${err.message}`);
+    }
+  };
+
+  const maskKey = (key: string): string => {
+    if (key.length <= 8) return '****';
+    return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
   };
 
   const handleSubmit = async () => {

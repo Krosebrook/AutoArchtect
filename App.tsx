@@ -74,7 +74,7 @@ const App: React.FC = () => {
           </div>
         </main>
         <footer className="px-10 py-3 border-t border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] hidden sm:flex shrink-0">
-          <div className="flex items-center gap-4"><span>AutoArchitect Enterprise v2.5</span><div className="h-3 w-[1px] bg-gray-200 dark:bg-gray-700" /><span className="text-indigo-500">Gemini 3 Pro Cluster</span></div>
+          <div className="flex items-center gap-4"><span>AutoArchitect Enterprise v2.6</span><div className="h-3 w-[1px] bg-gray-200 dark:bg-gray-700" /><span className="text-indigo-500">Gemini 3 Pro Cluster</span></div>
           <div className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />Engine: Nominal</div>
         </footer>
       </div>

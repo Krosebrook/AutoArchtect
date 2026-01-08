@@ -4,13 +4,22 @@ import { Platform, AutomationResult, SimulationResponse, AuditResult, Deployment
 import { storage } from "./storageService";
 
 /**
- * Creates and initializes the Google GenAI client exclusively using the pre-configured API key.
+ * Creates and initializes the Google GenAI client.
+ * Priority order: 1) Local stored key, 2) Environment variable
  */
-const createAiClient = () => {
-  const apiKey = process.env.API_KEY;
+const createAiClient = async () => {
+  // First, try to get key from local secure storage
+  let apiKey = await storage.getSecureKey('gemini');
+  
+  // Fallback to environment variable (for deployment scenarios)
   if (!apiKey) {
-    throw new Error("Critical Configuration Missing: API_KEY environment variable is not set.");
+    apiKey = process.env.API_KEY || null;
   }
+  
+  if (!apiKey) {
+    throw new Error("No API key configured. Use 'set-key gemini YOUR_KEY' in Terminal to configure.");
+  }
+  
   return new GoogleGenAI({ apiKey });
 };
 
@@ -18,7 +27,7 @@ async function executeAiTask<T>(
   task: (ai: GoogleGenAI) => Promise<T>,
   retryCount = 2
 ): Promise<T> {
-  const ai = createAiClient();
+  const ai = await createAiClient();
   try {
     return await task(ai);
   } catch (error: any) {
@@ -231,8 +240,8 @@ export const generateProcedureManual = async (text: string): Promise<string> => 
   });
 };
 
-export const connectToLiveArchitect = (callbacks: any) => {
-  const ai = createAiClient();
+export const connectToLiveArchitect = async (callbacks: any) => {
+  const ai = await createAiClient();
   return ai.live.connect({
     model: 'gemini-2.5-flash-native-audio-preview-09-2025',
     callbacks,
