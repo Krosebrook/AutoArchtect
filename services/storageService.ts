@@ -4,6 +4,15 @@ import { Dexie, type Table } from 'dexie';
 import { SavedBlueprint, UserProfile } from '../types';
 
 /**
+ * SecureKey interface for storing obfuscated API keys
+ */
+export interface SecureKey {
+  provider: string;
+  obfuscatedKey: string;
+  createdAt: number;
+}
+
+/**
  * Standard Dexie database initialization.
  * Using named import for Dexie ensures that class methods like 'version' 
  * are correctly inherited and recognized by the TypeScript compiler.
@@ -11,24 +20,65 @@ import { SavedBlueprint, UserProfile } from '../types';
 export class ArchitectDatabase extends Dexie {
   blueprints!: Table<SavedBlueprint>;
   profile!: Table<UserProfile & { id: string }>;
+  secureKeys!: Table<SecureKey, string>;
 
   constructor() {
     // Initialize the database with its name
     super('AutoArchitectDB');
     
-    // Configure database versioning and stores on the instance.
-    // The version() method is inherited from the Dexie base class.
-    // Fix: Explicitly cast 'this' to the base Dexie class to resolve the inheritance visibility issue in some TypeScript environments.
+    // Version 1: Initial schema
     (this as Dexie).version(1).stores({
       blueprints: 'id, name, platform, timestamp',
       profile: 'id'
+    });
+
+    // Version 2: Add secureKeys table for local API key storage
+    (this as Dexie).version(2).stores({
+      blueprints: 'id, name, platform, timestamp',
+      profile: 'id',
+      secureKeys: 'provider, createdAt'
     });
   }
 }
 
 export const db = new ArchitectDatabase();
 
-// Removed local key storage to comply with exclusively using process.env.API_KEY
+/**
+ * Key Obfuscation Utilities
+ * Using XOR cipher with a rotating pattern for reversible obfuscation.
+ * This is NOT encryption - it prevents casual inspection but determined users
+ * can still extract keys. Suitable for preventing accidental exposure.
+ */
+const OBFUSCATION_SEED = 'AutoArchitect-SecureVault-2026';
+
+function obfuscateKey(plainKey: string): string {
+  const seed = OBFUSCATION_SEED;
+  let result = '';
+  for (let i = 0; i < plainKey.length; i++) {
+    const charCode = plainKey.charCodeAt(i) ^ seed.charCodeAt(i % seed.length);
+    result += String.fromCharCode(charCode);
+  }
+  return btoa(result); // Base64 encode for storage safety
+}
+
+function deobfuscateKey(obfuscatedKey: string): string {
+  const seed = OBFUSCATION_SEED;
+  try {
+    const decoded = atob(obfuscatedKey);
+    let result = '';
+    for (let i = 0; i < decoded.length; i++) {
+      const charCode = decoded.charCodeAt(i) ^ seed.charCodeAt(i % seed.length);
+      result += String.fromCharCode(charCode);
+    }
+    return result;
+  } catch (error) {
+    throw new Error('Key deobfuscation failed. Corrupted data.');
+  }
+}
+
+/**
+ * Storage API with Secure Key Management
+ */
 export const storage = {
   async getProfile(): Promise<UserProfile | null> {
     const p = await db.profile.get('current');
@@ -37,5 +87,51 @@ export const storage = {
 
   async saveProfile(p: UserProfile) {
     return await db.profile.put({ ...p, id: 'current' });
+  },
+
+  /**
+   * Save an API key for a provider with obfuscation
+   */
+  async saveSecureKey(provider: string, plainKey: string): Promise<void> {
+    // Validate provider name (alphanumeric, hyphens, underscores only)
+    if (!/^[a-zA-Z0-9_-]+$/.test(provider)) {
+      throw new Error('Invalid provider name. Use alphanumeric characters only.');
+    }
+
+    if (!plainKey || plainKey.trim().length === 0) {
+      throw new Error('API key cannot be empty.');
+    }
+
+    const obfuscatedKey = obfuscateKey(plainKey.trim());
+    await db.secureKeys.put({
+      provider: provider.toLowerCase(),
+      obfuscatedKey,
+      createdAt: Date.now()
+    });
+  },
+
+  /**
+   * Retrieve and deobfuscate an API key for a provider
+   */
+  async getSecureKey(provider: string): Promise<string | null> {
+    const record = await db.secureKeys.get(provider.toLowerCase());
+    if (!record) return null;
+    return deobfuscateKey(record.obfuscatedKey);
+  },
+
+  /**
+   * Delete a stored API key
+   */
+  async deleteSecureKey(provider: string): Promise<boolean> {
+    const count = await db.secureKeys.where('provider').equals(provider.toLowerCase()).delete();
+    return count > 0;
+  },
+
+  /**
+   * List all providers that have stored keys (not the keys themselves)
+   */
+  async listSecureKeys(): Promise<string[]> {
+    const keys = await db.secureKeys.toArray();
+    return keys.map(k => k.provider);
   }
 };
